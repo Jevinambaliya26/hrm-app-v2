@@ -8,7 +8,8 @@ import {
 import { Formik, Form, FieldArray } from 'formik';
 import * as Yup from 'yup';
 import axios from 'axios';
-
+import { allEmployeesAction } from './Reducers/employeeReducer';
+import { connect } from 'react-redux';
 
 const validationSchema = Yup.object().shape({
   first_name: Yup.string().min(2, 'Too Short!').max(50, 'Too Long!').required('Required'),
@@ -22,43 +23,19 @@ class Employee extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      // module_permission: [
-      //   {
-      //     name: "Holidays",
-      //     type: "Route",
-      //     id: 1,
-      //     module_id: 1,
-      //     employee_id: 1,
-      //     read: 1,
-      //     write: 0,
-      //     create: 0,
-      //     delete: 0,
-      //     import: 0,
-      //     export: 0,
-      //     is_active: 1,
-      //     created_at: "2021-08-14T10:52:34.000Z",
-      //     created_by: 1,
-      //     updated_at: "2021-08-14T10:52:34.000Z",
-      //     updated_by: 1
-      //   },],
       module_loading: true,
-      companyList: [],
-      departmentList: [],
-      designationList: [],
-      module_permission: []
     };
   }
-  addEmploye = (values) => {
-    preventDefault()
-    console.log(values);
+  addEmploye = async (values) => {
+    delete values['cPassword']
+    console.log("values=====>", values);
+    let res = await axios.post("http://localhost:3000/employee/create/v1", values)
+    console.log("res==>", res);
   }
   getCompanyName = async () => {
     try {
       const res = await axios.get("http://localhost:3000/company/master/v1")
-      this.setState({
-        ...this.state,
-        companyList: res.data.data
-      })
+      this.props.getCompany(res.data.data)
     } catch (error) {
       console.log(error);
     }
@@ -69,7 +46,6 @@ class Employee extends Component {
       res.data.data.forEach((item) => {
         item['name'] = item.module_name;
         item['module_id'] = item.id;
-        item['employee_id'] = item.id;
         item['is_active'] = 1;
         item['created_at'] = "2021-08-14T10:52:34.000Z";
         item['created_by'] = 1;
@@ -82,9 +58,9 @@ class Employee extends Component {
         item['import'] = false;
         item['export'] = false;
       })
+      this.props.getModulePermission(res.data.data)
       this.setState({
         module_loading: false,
-        module_permission: res.data.data
       })
     } catch (error) {
       console.log(error);
@@ -98,10 +74,7 @@ class Employee extends Component {
     const id = e.target.value
     try {
       let res = await axios.get(`http://localhost:3000/department/master/${id}/v1`)
-      this.setState({
-        ...this.state,
-        departmentList: res.data.data
-      })
+      this.props.getDepartment(res.data.data)
     } catch (error) {
       console.log(error);
     }
@@ -110,10 +83,7 @@ class Employee extends Component {
     const id = e.target.value
     try {
       const res = await axios.get(`http://localhost:3000/designation/master/${id}/v1`)
-      this.setState({
-        ...this.state,
-        designationList: res.data.data
-      })
+      this.props.getDesignation(res.data.data)
     } catch (error) {
       console.log(error);
     }
@@ -128,7 +98,6 @@ class Employee extends Component {
     })
   }
   render() {
-    console.log("this.state.module_permission=====>", this.state.module_permission);
     return (
       <div className="page-wrapper">
         <Helmet>
@@ -397,33 +366,31 @@ class Employee extends Component {
               <div className="modal-body">
                 {!this.state.module_loading ? <Formik
                   initialValues={{
-                    company_name: "",
-                    department_name: "",
-                    designation: "",
-                    employee_id: Math.random(),
+                    employee_id: Math.random().toString(),
                     first_name: "",
                     last_name: "",
                     user_name: "",
                     email: "",
                     password: "",
+                    cPassword: "",
                     joining_date: "",
                     phone: "",
-                    company_id: 1,
-                    department_id: 1,
-                    designation_id: 1,
+                    company_id: 0,
+                    department_id: 0,
+                    designation_id: 0,
                     is_active: 1,
                     roll_id: 1,
                     created_at: "2021-08-14T10:30:34.000Z",
                     created_by: 1,
                     updated_at: "2021-08-14T10:30:34.000Z",
                     updated_by: 1,
-                    module_permission: this.state.module_permission,
+                    module_permission: this.props.module_permission,
                   }}
                   enableReinitialize={false}
                   validationSchema={validationSchema}
-                  onSubmit={values => {
-                    // addEmploye(values)
-                    console.log("values=====",JSON.stringify(values));
+                  onSubmit={(values, actions) => {
+                      this.addEmploye(values);
+                      actions.resetForm();
                   }}
                 >
                   {({ errors, values, touched, handleChange }) => (
@@ -492,9 +459,9 @@ class Employee extends Component {
                         <div className="col-sm-6">
                           <div className="form-group">
                             <label className="col-form-label">Company</label>
-                            <select className="form-control" name="company_name" onChange={(e) => { handleChange(e); this.companyOnchange(e) }}>
+                            <select className="form-control" name="company_id" onChange={(e) => { handleChange(e); this.companyOnchange(e) }}>
                               <option>---Select Company---</option>
-                              {this.state.companyList.map((item) => {
+                              {this.props.companyList.map((item) => {
                                 return (
                                   <option value={item.id}>{item.company_name}</option>
                                 )
@@ -505,9 +472,9 @@ class Employee extends Component {
                         <div className="col-md-6">
                           <div className="form-group">
                             <label>Department <span className="text-danger">*</span></label>
-                            <select className="form-control" name="department_name" onChange={(e) => { handleChange(e); this.departmentOnchange(e) }}>
+                            <select className="form-control" name="department_id" onChange={(e) => { handleChange(e); this.departmentOnchange(e) }}>
                               <option>---Select Department---</option>
-                              {this.state.departmentList.map((item) => {
+                              {this.props.departmentList.map((item) => {
                                 return (
                                   <option value={item.id}>{item.department_name}</option>
                                 )
@@ -518,9 +485,9 @@ class Employee extends Component {
                         <div className="col-md-6">
                           <div className="form-group">
                             <label>Designation <span className="text-danger">*</span></label>
-                            <select className="form-control" name="designation" onChange={handleChange}>
+                            <select className="form-control" name="designation_id" onChange={handleChange}>
                               <option>---Select Designation---</option>
-                              {this.state.designationList.map((item) => {
+                              {this.props.designationList.map((item) => {
                                 return (
                                   <option value={item.id}>{item.designation_name}</option>
                                 )
@@ -912,5 +879,20 @@ class Employee extends Component {
     );
   }
 }
-
-export default Employee;
+const mapStateToProps = state => {
+  return {
+    companyList: state.allEmployees.companyList,
+    departmentList: state.allEmployees.departmentList,
+    designationList: state.allEmployees.designationList,
+    module_permission: state.allEmployees.module_permission,
+  }
+}
+const mapDispatchToProps = dispatch => {
+  return {
+    getCompany: (data) => dispatch(allEmployeesAction.getCompanyList(data)),
+    getDepartment: (data) => dispatch(allEmployeesAction.getDepartmentList(data)),
+    getDesignation: (data) => dispatch(allEmployeesAction.getDesignationList(data)),
+    getModulePermission: (data) => dispatch(allEmployeesAction.getModulePermission(data)),
+  }
+};
+export default connect(mapStateToProps, mapDispatchToProps)(Employee);
