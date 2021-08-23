@@ -10,6 +10,7 @@ import * as Yup from 'yup';
 import axios from 'axios';
 import { allEmployeesAction } from './Reducers/employeeReducer';
 import { connect } from 'react-redux';
+import moment from 'moment';
 
 const validationSchema = Yup.object().shape({
   first_name: Yup.string().min(2, 'Too Short!').max(50, 'Too Long!').required('Required'),
@@ -26,16 +27,28 @@ class Employee extends Component {
       module_loading: true,
     };
   }
-  addEmploye = async (values) => {
+  addEmploye = async (values, actions) => {
     delete values['cPassword']
     console.log("values=====>", values);
     let res = await axios.post("http://localhost:3000/employee/create/v1", values)
+    actions.resetForm();
     console.log("res==>", res);
+  }
+  editEmploye = async (value, actions) => {
+    console.log("edited-values===>", value);
   }
   getCompanyName = async () => {
     try {
       const res = await axios.get("http://localhost:3000/company/master/v1")
       this.props.getCompany(res.data.data)
+    } catch (error) {
+      console.log(error);
+    }
+  }
+  getEmployeeList = async () => {
+    try {
+      const res = await axios.get('http://localhost:3000/employee/list/v1')
+      this.props.getEmployee(res.data.data)
     } catch (error) {
       console.log(error);
     }
@@ -68,7 +81,8 @@ class Employee extends Component {
   }
   componentDidMount() {
     this.getCompanyName();
-    this.getModulePermission()
+    this.getModulePermission();
+    this.getEmployeeList()
   }
   companyOnchange = async (e) => {
     const id = e.target.value
@@ -97,7 +111,17 @@ class Employee extends Component {
       module_permission: this.state.module_permission
     })
   }
+  editEmployees = async (id) => {
+    try {
+      const res = await axios.get(`http://localhost:3000/employee/edit/${id}/v1`)
+      this.props.getEditEmployee(res.data.data)
+      // this.departmentOnchange(res.data.data.department_id)
+    } catch (error) {
+      console.log(error);
+    }
+  }
   render() {
+    console.log("editEmployee==>", this.props.editEmployee);
     return (
       <div className="page-wrapper">
         <Helmet>
@@ -117,7 +141,7 @@ class Employee extends Component {
                 </ul>
               </div>
               <div className="col-auto float-right ml-auto">
-                <a href="#" className="btn add-btn" data-toggle="modal" data-target="#add_employee"><i className="fa fa-plus" /> Add Employee</a>
+                <a href="#" className="btn add-btn" data-toggle="modal" data-target="#add_employee" ><i className="fa fa-plus" />Add Employee</a>
                 <div className="view-icons">
                   <a href="/blue/app/employee/allemployees" className="grid-view btn btn-link active"><i className="fa fa-th" /></a>
                   <a href="/blue/app/employee/employees-list" className="list-view btn btn-link"><i className="fa fa-bars" /></a>
@@ -158,198 +182,26 @@ class Employee extends Component {
           </div>
           {/* Search Filter */}
           <div className="row staff-grid-row">
-            <div className="col-md-4 col-sm-6 col-12 col-lg-4 col-xl-3">
-              <div className="profile-widget">
-                <div className="profile-img">
-                  <a href="/blue/app/profile/employee-profile" className="avatar"><img src={Avatar_02} alt="" /></a>
-                </div>
-                <div className="dropdown profile-action">
-                  <a href="#" className="action-icon dropdown-toggle" data-toggle="dropdown" aria-expanded="false"><i className="material-icons">more_vert</i></a>
-                  <div className="dropdown-menu dropdown-menu-right">
-                    <a className="dropdown-item" href="#" data-toggle="modal" data-target="#edit_employee"><i className="fa fa-pencil m-r-5" /> Edit</a>
-                    <a className="dropdown-item" href="#" data-toggle="modal" data-target="#delete_employee"><i className="fa fa-trash-o m-r-5" /> Delete</a>
+            {this.props.employeeList.map((item) => {
+              return (
+                <div className="col-md-4 col-sm-6 col-12 col-lg-4 col-xl-3">
+                  <div className="profile-widget">
+                    <div className="profile-img">
+                      <a href="/blue/app/profile/employee-profile" className="avatar"><img src={Avatar_02} alt="" /></a>
+                    </div>
+                    <div className="dropdown profile-action">
+                      <a href="#" className="action-icon dropdown-toggle" data-toggle="dropdown" aria-expanded="false"><i className="material-icons">more_vert</i></a>
+                      <div className="dropdown-menu dropdown-menu-right">
+                        <a className="dropdown-item" href="#" data-toggle="modal" data-target="#edit_employee" onClick={() => this.editEmployees(item.id)}><i className="fa fa-pencil m-r-5" /> Edit</a>
+                        <a className="dropdown-item" href="#" data-toggle="modal" data-target="#delete_employee"><i className="fa fa-trash-o m-r-5" /> Delete</a>
+                      </div>
+                    </div>
+                    <h4 className="user-name m-t-10 mb-0 text-ellipsis"><a href="/blue/app/profile/employee-profile">{item.first_name} {item.last_name}</a></h4>
+                    <div className="small text-muted">{item.designation}</div>
                   </div>
                 </div>
-                <h4 className="user-name m-t-10 mb-0 text-ellipsis"><a href="/blue/app/profile/employee-profile">John Doe</a></h4>
-                <div className="small text-muted">Web Designer</div>
-              </div>
-            </div>
-            <div className="col-md-4 col-sm-6 col-12 col-lg-4 col-xl-3">
-              <div className="profile-widget">
-                <div className="profile-img">
-                  <a href="/blue/app/profile/employee-profile" className="avatar"><img src={Avatar_09} alt="" /></a>
-                </div>
-                <div className="dropdown profile-action">
-                  <a href="#" className="action-icon dropdown-toggle" data-toggle="dropdown" aria-expanded="false"><i className="material-icons">more_vert</i></a>
-                  <div className="dropdown-menu dropdown-menu-right">
-                    <a className="dropdown-item" href="#" data-toggle="modal" data-target="#edit_employee"><i className="fa fa-pencil m-r-5" /> Edit</a>
-                    <a className="dropdown-item" href="#" data-toggle="modal" data-target="#delete_employee"><i className="fa fa-trash-o m-r-5" /> Delete</a>
-                  </div>
-                </div>
-                <h4 className="user-name m-t-10 mb-0 text-ellipsis"><a href="/blue/app/profile/employee-profile">Richard Miles</a></h4>
-                <div className="small text-muted">Web Developer</div>
-              </div>
-            </div>
-            <div className="col-md-4 col-sm-6 col-12 col-lg-4 col-xl-3">
-              <div className="profile-widget">
-                <div className="profile-img">
-                  <a href="/blue/app/profile/employee-profile" className="avatar"><img src={Avatar_10} alt="" /></a>
-                </div>
-                <div className="dropdown profile-action">
-                  <a href="#" className="action-icon dropdown-toggle" data-toggle="dropdown" aria-expanded="false"><i className="material-icons">more_vert</i></a>
-                  <div className="dropdown-menu dropdown-menu-right">
-                    <a className="dropdown-item" href="#" data-toggle="modal" data-target="#edit_employee"><i className="fa fa-pencil m-r-5" /> Edit</a>
-                    <a className="dropdown-item" href="#" data-toggle="modal" data-target="#delete_employee"><i className="fa fa-trash-o m-r-5" /> Delete</a>
-                  </div>
-                </div>
-                <h4 className="user-name m-t-10 mb-0 text-ellipsis"><a href="/blue/app/profile/employee-profile">John Smith</a></h4>
-                <div className="small text-muted">Android Developer</div>
-              </div>
-            </div>
-            <div className="col-md-4 col-sm-6 col-12 col-lg-4 col-xl-3">
-              <div className="profile-widget">
-                <div className="profile-img">
-                  <a href="/blue/app/profile/employee-profile" className="avatar"><img src={Avatar_05} alt="" /></a>
-                </div>
-                <div className="dropdown profile-action">
-                  <a href="#" className="action-icon dropdown-toggle" data-toggle="dropdown" aria-expanded="false"><i className="material-icons">more_vert</i></a>
-                  <div className="dropdown-menu dropdown-menu-right">
-                    <a className="dropdown-item" href="#" data-toggle="modal" data-target="#edit_employee"><i className="fa fa-pencil m-r-5" /> Edit</a>
-                    <a className="dropdown-item" href="#" data-toggle="modal" data-target="#delete_employee"><i className="fa fa-trash-o m-r-5" /> Delete</a>
-                  </div>
-                </div>
-                <h4 className="user-name m-t-10 mb-0 text-ellipsis"><a href="/blue/app/profile/employee-profile">Mike Litorus</a></h4>
-                <div className="small text-muted">IOS Developer</div>
-              </div>
-            </div>
-            <div className="col-md-4 col-sm-6 col-12 col-lg-4 col-xl-3">
-              <div className="profile-widget">
-                <div className="profile-img">
-                  <a href="/blue/app/profile/employee-profile" className="avatar"><img src={Avatar_11} alt="" /></a>
-                </div>
-                <div className="dropdown profile-action">
-                  <a href="#" className="action-icon dropdown-toggle" data-toggle="dropdown" aria-expanded="false"><i className="material-icons">more_vert</i></a>
-                  <div className="dropdown-menu dropdown-menu-right">
-                    <a className="dropdown-item" href="#" data-toggle="modal" data-target="#edit_employee"><i className="fa fa-pencil m-r-5" /> Edit</a>
-                    <a className="dropdown-item" href="#" data-toggle="modal" data-target="#delete_employee"><i className="fa fa-trash-o m-r-5" /> Delete</a>
-                  </div>
-                </div>
-                <h4 className="user-name m-t-10 mb-0 text-ellipsis"><a href="/blue/app/profile/employee-profile">Wilmer Deluna</a></h4>
-                <div className="small text-muted">Team Leader</div>
-              </div>
-            </div>
-            <div className="col-md-4 col-sm-6 col-12 col-lg-4 col-xl-3">
-              <div className="profile-widget">
-                <div className="profile-img">
-                  <a href="/blue/app/profile/employee-profile" className="avatar"><img src={Avatar_12} alt="" /></a>
-                </div>
-                <div className="dropdown profile-action">
-                  <a href="#" className="action-icon dropdown-toggle" data-toggle="dropdown" aria-expanded="false"><i className="material-icons">more_vert</i></a>
-                  <div className="dropdown-menu dropdown-menu-right">
-                    <a className="dropdown-item" href="#" data-toggle="modal" data-target="#edit_employee"><i className="fa fa-pencil m-r-5" /> Edit</a>
-                    <a className="dropdown-item" href="#" data-toggle="modal" data-target="#delete_employee"><i className="fa fa-trash-o m-r-5" /> Delete</a>
-                  </div>
-                </div>
-                <h4 className="user-name m-t-10 mb-0 text-ellipsis"><a href="/blue/app/profile/employee-profile">Jeffrey Warden</a></h4>
-                <div className="small text-muted">Web Developer</div>
-              </div>
-            </div>
-            <div className="col-md-4 col-sm-6 col-12 col-lg-4 col-xl-3">
-              <div className="profile-widget">
-                <div className="profile-img">
-                  <a href="/blue/app/profile/employee-profile" className="avatar"><img src={Avatar_13} alt="" /></a>
-                </div>
-                <div className="dropdown profile-action">
-                  <a href="#" className="action-icon dropdown-toggle" data-toggle="dropdown" aria-expanded="false"><i className="material-icons">more_vert</i></a>
-                  <div className="dropdown-menu dropdown-menu-right">
-                    <a className="dropdown-item" href="#" data-toggle="modal" data-target="#edit_employee"><i className="fa fa-pencil m-r-5" /> Edit</a>
-                    <a className="dropdown-item" href="#" data-toggle="modal" data-target="#delete_employee"><i className="fa fa-trash-o m-r-5" /> Delete</a>
-                  </div>
-                </div>
-                <h4 className="user-name m-t-10 mb-0 text-ellipsis"><a href="/blue/app/profile/employee-profile">Bernardo Galaviz</a></h4>
-                <div className="small text-muted">Web Developer</div>
-              </div>
-            </div>
-            <div className="col-md-4 col-sm-6 col-12 col-lg-4 col-xl-3">
-              <div className="profile-widget">
-                <div className="profile-img">
-                  <a href="/blue/app/profile/employee-profile" className="avatar"><img src={Avatar_01} alt="" /></a>
-                </div>
-                <div className="dropdown profile-action">
-                  <a href="#" className="action-icon dropdown-toggle" data-toggle="dropdown" aria-expanded="false"><i className="material-icons">more_vert</i></a>
-                  <div className="dropdown-menu dropdown-menu-right">
-                    <a className="dropdown-item" href="#" data-toggle="modal" data-target="#edit_employee"><i className="fa fa-pencil m-r-5" /> Edit</a>
-                    <a className="dropdown-item" href="#" data-toggle="modal" data-target="#delete_employee"><i className="fa fa-trash-o m-r-5" /> Delete</a>
-                  </div>
-                </div>
-                <h4 className="user-name m-t-10 mb-0 text-ellipsis"><a href="/blue/app/profile/employee-profile">Lesley Grauer</a></h4>
-                <div className="small text-muted">Team Leader</div>
-              </div>
-            </div>
-            <div className="col-md-4 col-sm-6 col-12 col-lg-4 col-xl-3">
-              <div className="profile-widget">
-                <div className="profile-img">
-                  <a href="/blue/app/profile/employee-profile" className="avatar"><img src={Avatar_16} alt="" /></a>
-                </div>
-                <div className="dropdown profile-action">
-                  <a href="#" className="action-icon dropdown-toggle" data-toggle="dropdown" aria-expanded="false"><i className="material-icons">more_vert</i></a>
-                  <div className="dropdown-menu dropdown-menu-right">
-                    <a className="dropdown-item" href="#" data-toggle="modal" data-target="#edit_employee"><i className="fa fa-pencil m-r-5" /> Edit</a>
-                    <a className="dropdown-item" href="#" data-toggle="modal" data-target="#delete_employee"><i className="fa fa-trash-o m-r-5" /> Delete</a>
-                  </div>
-                </div>
-                <h4 className="user-name m-t-10 mb-0 text-ellipsis"><a href="/blue/app/profile/employee-profile">Jeffery Lalor</a></h4>
-                <div className="small text-muted">Team Leader</div>
-              </div>
-            </div>
-            <div className="col-md-4 col-sm-6 col-12 col-lg-4 col-xl-3">
-              <div className="profile-widget">
-                <div className="profile-img">
-                  <a href="/blue/app/profile/employee-profile" className="avatar"><img src={Avatar_04} alt="" /></a>
-                </div>
-                <div className="dropdown profile-action">
-                  <a href="#" className="action-icon dropdown-toggle" data-toggle="dropdown" aria-expanded="false"><i className="material-icons">more_vert</i></a>
-                  <div className="dropdown-menu dropdown-menu-right">
-                    <a className="dropdown-item" href="#" data-toggle="modal" data-target="#edit_employee"><i className="fa fa-pencil m-r-5" /> Edit</a>
-                    <a className="dropdown-item" href="#" data-toggle="modal" data-target="#delete_employee"><i className="fa fa-trash-o m-r-5" /> Delete</a>
-                  </div>
-                </div>
-                <h4 className="user-name m-t-10 mb-0 text-ellipsis"><a href="/blue/app/profile/employee-profile">Loren Gatlin</a></h4>
-                <div className="small text-muted">Android Developer</div>
-              </div>
-            </div>
-            <div className="col-md-4 col-sm-6 col-12 col-lg-4 col-xl-3">
-              <div className="profile-widget">
-                <div className="profile-img">
-                  <a href="/blue/app/profile/employee-profile" className="avatar"><img src={Avatar_03} alt="" /></a>
-                </div>
-                <div className="dropdown profile-action">
-                  <a href="#" className="action-icon dropdown-toggle" data-toggle="dropdown" aria-expanded="false"><i className="material-icons">more_vert</i></a>
-                  <div className="dropdown-menu dropdown-menu-right">
-                    <a className="dropdown-item" href="#" data-toggle="modal" data-target="#edit_employee"><i className="fa fa-pencil m-r-5" /> Edit</a>
-                    <a className="dropdown-item" href="#" data-toggle="modal" data-target="#delete_employee"><i className="fa fa-trash-o m-r-5" /> Delete</a>
-                  </div>
-                </div>
-                <h4 className="user-name m-t-10 mb-0 text-ellipsis"><a href="/blue/app/profile/employee-profile">Tarah Shropshire</a></h4>
-                <div className="small text-muted">Android Developer</div>
-              </div>
-            </div>
-            <div className="col-md-4 col-sm-6 col-12 col-lg-4 col-xl-3">
-              <div className="profile-widget">
-                <div className="profile-img">
-                  <a href="/blue/app/profile/employee-profile" className="avatar"><img src={Avatar_08} alt="" /></a>
-                </div>
-                <div className="dropdown profile-action">
-                  <a href="#" className="action-icon dropdown-toggle" data-toggle="dropdown" aria-expanded="false"><i className="material-icons">more_vert</i></a>
-                  <div className="dropdown-menu dropdown-menu-right">
-                    <a className="dropdown-item" href="#" data-toggle="modal" data-target="#edit_employee"><i className="fa fa-pencil m-r-5" /> Edit</a>
-                    <a className="dropdown-item" href="#" data-toggle="modal" data-target="#delete_employee"><i className="fa fa-trash-o m-r-5" /> Delete</a>
-                  </div>
-                </div>
-                <h4 className="user-name m-t-10 mb-0 text-ellipsis"><a href="/blue/app/profile/employee-profile">Catherine Manseau</a></h4>
-                <div className="small text-muted">Android Developer</div>
-              </div>
-            </div>
+              )
+            })}
           </div>
         </div>
         {/* /Page Content */}
@@ -380,17 +232,16 @@ class Employee extends Component {
                     designation_id: 0,
                     is_active: 1,
                     roll_id: 1,
-                    created_at: "2021-08-14T10:30:34.000Z",
+                    created_at: Date.now(),
                     created_by: 1,
                     updated_at: "2021-08-14T10:30:34.000Z",
-                    updated_by: 1,
+                    updated_by: "",
                     module_permission: this.props.module_permission,
                   }}
                   enableReinitialize={false}
                   validationSchema={validationSchema}
                   onSubmit={(values, actions) => {
-                      this.addEmploye(values);
-                      actions.resetForm();
+                    this.addEmploye(values, actions);
                   }}
                 >
                   {({ errors, values, touched, handleChange }) => (
@@ -515,30 +366,32 @@ class Employee extends Component {
                             render={arrayHelpers => (
                               <>
                                 <tbody>
-                                  {values.module_permission.map((item, index) => (
-                                    <tr key={index}>
-                                      <td>{item.name}</td>
-                                      <td>{item.type}</td>
-                                      <td className="text-center">
-                                        <input type="checkbox" name={`module_permission.${index}.read`} onChange={handleChange} />
-                                      </td>
-                                      <td className="text-center">
-                                        <input type="checkbox" name={`module_permission.${index}.update`} onChange={handleChange} />
-                                      </td>
-                                      <td className="text-center">
-                                        <input type="checkbox" name={`module_permission.${index}.create`} onChange={handleChange} />
-                                      </td>
-                                      <td className="text-center">
-                                        <input type="checkbox" name={`module_permission.${index}.delete`} onChange={handleChange} />
-                                      </td>
-                                      <td className="text-center">
-                                        <input type="checkbox" name={`module_permission.${index}.import`} onChange={handleChange} />
-                                      </td>
-                                      <td className="text-center">
-                                        <input type="checkbox" name={`module_permission.${index}.export`} onChange={handleChange} />
-                                      </td>
-                                    </tr>
-                                  ))}
+                                  {values.module_permission.map((item, index) => {
+                                    return (
+                                      <tr key={index}>
+                                        <td>{item.name}</td>
+                                        <td>{item.type}</td>
+                                        <td className="text-center">
+                                          <input type="checkbox" name={`module_permission.${index}.read`} onChange={handleChange} />
+                                        </td>
+                                        <td className="text-center">
+                                          <input type="checkbox" name={`module_permission.${index}.update`} onChange={handleChange} />
+                                        </td>
+                                        <td className="text-center">
+                                          <input type="checkbox" name={`module_permission.${index}.create`} onChange={handleChange} />
+                                        </td>
+                                        <td className="text-center">
+                                          <input type="checkbox" name={`module_permission.${index}.delete`} onChange={handleChange} />
+                                        </td>
+                                        <td className="text-center">
+                                          <input type="checkbox" name={`module_permission.${index}.import`} defaultChecked={`module_permission.${index}.import` === 1} onChange={handleChange} />
+                                        </td>
+                                        <td className="text-center">
+                                          <input type="checkbox" name={`module_permission.${index}.export`} onChange={handleChange} />
+                                        </td>
+                                      </tr>
+                                    )
+                                  })}
                                 </tbody>
                               </>
                             )}
@@ -568,284 +421,194 @@ class Employee extends Component {
                 </button>
               </div>
               <div className="modal-body">
-                <form>
-                  <div className="row">
-                    <div className="col-sm-6">
-                      <div className="form-group">
-                        <label className="col-form-label">First Name <span className="text-danger">*</span></label>
-                        <input className="form-control" defaultValue="John" type="text" />
+                {this.props.editEmployee.edit_module_loading ? <Formik
+                  initialValues={{
+                    employee_id: this.props.editEmployee.employee_id,
+                    first_name: this.props.editEmployee.first_name,
+                    last_name: this.props.editEmployee.last_name,
+                    user_name: this.props.editEmployee.user_name,
+                    email: this.props.editEmployee.email,
+                    password: this.props.editEmployee.password,
+                    cPassword: this.props.editEmployee.password,
+                    joining_date: moment(this.props.editEmployee.joining_date).format('YYYY-MM-DD'),
+                    phone: this.props.editEmployee.phone,
+                    company_id: this.props.editEmployee.company_id,
+                    department_id: this.props.editEmployee.department_id,
+                    designation_id: this.props.editEmployee.designation_id,
+                    is_active: 1,
+                    roll_id: 1,
+                    created_at: this.props.editEmployee.created_at,
+                    created_by: 1,
+                    updated_at: Date.now(),
+                    updated_by: this.props.editEmployee.updated_by,
+                    module_permission: this.props.editEmployee.module_permission,
+                  }}
+                  enableReinitialize={true}
+                  validationSchema={validationSchema}
+                  onSubmit={(values, actions) => {
+                    this.editEmploye(values, actions);
+                  }}
+                >
+                  {({ errors, values, touched, handleChange }) => (
+                    <Form>
+                      <div className="row">
+                        <div className="col-sm-6">
+                          <div className="form-group">
+                            <label className="col-form-label">First Name <span className="text-danger">*</span></label>
+                            <input className="form-control" type="text" value={values.first_name} onChange={handleChange} name="first_name" />
+                            {errors.first_name && touched.first_name ? (<span className="text-danger">{errors.first_name}</span>) : null}
+                          </div>
+                        </div>
+                        <div className="col-sm-6">
+                          <div className="form-group">
+                            <label className="col-form-label">Last Name</label>
+                            <input className="form-control" type="text" value={values.last_name} name="last_name" onChange={handleChange} />
+                          </div>
+                        </div>
+                        <div className="col-sm-6">
+                          <div className="form-group">
+                            <label className="col-form-label">Username <span className="text-danger" >*</span></label>
+                            <input className="form-control" type="text" value={values.user_name} name="user_name" onChange={handleChange} />
+                            {errors.user_name && touched.user_name ? (<span className="text-danger">{errors.user_name}</span>) : null}
+                          </div>
+                        </div>
+                        <div className="col-sm-6">
+                          <div className="form-group">
+                            <label className="col-form-label">Email <span className="text-danger" >*</span></label>
+                            <input className="form-control" type="email" value={values.email} name="email" onChange={handleChange} />
+                            {errors.email && touched.email ? (<span className="text-danger">{errors.email}</span>) : null}
+                          </div>
+                        </div>
+                        <div className="col-sm-6">
+                          <div className="form-group">
+                            <label className="col-form-label" >Password</label>
+                            <input className="form-control" type="password" value={values.password} name="password" onChange={handleChange} />
+                            {errors.password && touched.password ? (<span className="text-danger">{errors.password}</span>) : null}
+                          </div>
+                        </div>
+                        <div className="col-sm-6">
+                          <div className="form-group">
+                            <label className="col-form-label" >Confirm Password</label>
+                            <input className="form-control" type="password" value={values.cPassword} name="cPassword" onChange={handleChange} />
+                            {errors.cPassword && touched.cPassword ? (<span className="text-danger">{errors.cPassword}</span>) : null}
+                          </div>
+                        </div>
+                        <div className="col-sm-6">
+                          <div className="form-group">
+                            <label className="col-form-label">Employee ID <span className="text-danger">*</span></label>
+                            <input type="text" className="form-control" value={values.employee_id} name="employee_id" onChange={handleChange} />
+                          </div>
+                        </div>
+                        <div className="col-sm-6">
+                          <div className="form-group">
+                            <label className="col-form-label">Joining Date <span className="text-danger">*</span></label>
+                            <input className="form-control" type="date" value={values.joining_date} name="joining_date" onChange={handleChange} />
+                            {errors.joining_date && touched.joining_date ? (<span className="text-danger">{errors.joining_date}</span>) : null}
+                          </div>
+                        </div>
+                        <div className="col-sm-6">
+                          <div className="form-group">
+                            <label className="col-form-label">Phone </label>
+                            <input className="form-control" type="text" value={values.phone} name="phone" onChange={handleChange} />
+                          </div>
+                        </div>
+                        <div className="col-sm-6">
+                          <div className="form-group">
+                            <label className="col-form-label">Company</label>
+                            <select className="form-control" name="company_id" onChange={(e) => { handleChange(e); this.companyOnchange(e) }}>
+                              <option>---Select Company---</option>
+                              {this.props.companyList.map((item) => {
+                                return (
+                                  <option value={item.id}>{item.company_name}</option>
+                                )
+                              })}
+                            </select>
+                          </div>
+                        </div>
+                        <div className="col-md-6">
+                          <div className="form-group">
+                            <label>Department <span className="text-danger">*</span></label>
+                            <select className="form-control" name="department_id" onChange={(e) => { handleChange(e); this.departmentOnchange(e) }}>
+                              <option>---Select Department---</option>
+                              {this.props.departmentList.map((item) => {
+                                return (
+                                  <option value={item.id}>{item.department_name}</option>
+                                )
+                              })}
+                            </select>
+                          </div>
+                        </div>
+                        <div className="col-md-6">
+                          <div className="form-group">
+                            <label>Designation <span className="text-danger">*</span></label>
+                            <select className="form-control" name="designation_id" onChange={handleChange}>
+                              <option>---Select Designation---</option>
+                              {this.props.designationList.map((item) => {
+                                return (
+                                  <option value={item.id}>{item.designation_name}</option>
+                                )
+                              })}
+                            </select>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                    <div className="col-sm-6">
-                      <div className="form-group">
-                        <label className="col-form-label">Last Name</label>
-                        <input className="form-control" defaultValue="Doe" type="text" />
+                      <div className="table-responsive m-t-15">
+                        <table className="table table-striped custom-table">
+                          <thead>
+                            <tr>
+                              <th>Module Permission</th>
+                              <th>Type</th>
+                              <th className="text-center">Read</th>
+                              <th className="text-center">Write</th>
+                              <th className="text-center">Create</th>
+                              <th className="text-center">Delete</th>
+                              <th className="text-center">Import</th>
+                              <th className="text-center">Export</th>
+                            </tr>
+                          </thead>
+                          <FieldArray
+                            name="module_permission"
+                            render={arrayHelpers => (
+                              <>
+                                <tbody>
+                                  {values.module_permission.map((item, index) => {
+                                    return (
+                                      <tr key={index}>
+                                        <td>{item.name}</td>
+                                        <td>{item.type}</td>
+                                        <td className="text-center">
+                                          <input type="checkbox" name={`module_permission.${index}.read`} defaultChecked={item.read} onChange={handleChange} />
+                                        </td>
+                                        <td className="text-center">
+                                          <input type="checkbox" name={`module_permission.${index}.update`} defaultChecked={item.update} onChange={handleChange} />
+                                        </td>
+                                        <td className="text-center">
+                                          <input type="checkbox" name={`module_permission.${index}.create`} defaultChecked={item.create} onChange={handleChange} />
+                                        </td>
+                                        <td className="text-center">
+                                          <input type="checkbox" name={`module_permission.${index}.delete`} defaultChecked={item.delete} onChange={handleChange} />
+                                        </td>
+                                        <td className="text-center">
+                                          <input type="checkbox" name={`module_permission.${index}.import`} defaultChecked={item.import} onChange={handleChange} />
+                                        </td>
+                                        <td className="text-center">
+                                          <input type="checkbox" name={`module_permission.${index}.export`} defaultChecked={item.export} onChange={handleChange} />
+                                        </td>
+                                      </tr>
+                                    )
+                                  })}
+                                </tbody>
+                              </>
+                            )}
+                          />
+                        </table>
                       </div>
-                    </div>
-                    <div className="col-sm-6">
-                      <div className="form-group">
-                        <label className="col-form-label">Username <span className="text-danger">*</span></label>
-                        <input className="form-control" defaultValue="johndoe" type="text" />
+                      <div className="submit-section">
+                        <button className="btn btn-primary submit-btn" type="submit">Submit</button>
                       </div>
-                    </div>
-                    <div className="col-sm-6">
-                      <div className="form-group">
-                        <label className="col-form-label">Email <span className="text-danger">*</span></label>
-                        <input className="form-control" defaultValue="johndoe@example.com" type="email" />
-                      </div>
-                    </div>
-                    <div className="col-sm-6">
-                      <div className="form-group">
-                        <label className="col-form-label">Password</label>
-                        <input className="form-control" defaultValue="johndoe" type="password" />
-                      </div>
-                    </div>
-                    <div className="col-sm-6">
-                      <div className="form-group">
-                        <label className="col-form-label">Confirm Password</label>
-                        <input className="form-control" defaultValue="johndoe" type="password" />
-                      </div>
-                    </div>
-                    <div className="col-sm-6">
-                      <div className="form-group">
-                        <label className="col-form-label">Employee ID <span className="text-danger">*</span></label>
-                        <input type="text" defaultValue="FT-0001" readOnly className="form-control floating" />
-                      </div>
-                    </div>
-                    <div className="col-sm-6">
-                      <div className="form-group">
-                        <label className="col-form-label">Joining Date <span className="text-danger">*</span></label>
-                        <div className="cal-icon"><input className="form-control datetimepicker" type="text" /></div>
-                      </div>
-                    </div>
-                    <div className="col-sm-6">
-                      <div className="form-group">
-                        <label className="col-form-label">Phone </label>
-                        <input className="form-control" defaultValue={9876543210} type="text" />
-                      </div>
-                    </div>
-                    <div className="col-sm-6">
-                      <div className="form-group">
-                        <label className="col-form-label">Company</label>
-                        <select className="select">
-                          <option>Global Technologies</option>
-                          <option>Delta Infotech</option>
-                          <option>International Software Inc</option>
-                        </select>
-                      </div>
-                    </div>
-                    <div className="col-md-6">
-                      <div className="form-group">
-                        <label>Department <span className="text-danger">*</span></label>
-                        <select className="select">
-                          <option>Select Department</option>
-                          <option>Web Development</option>
-                          <option>IT Management</option>
-                          <option>Marketing</option>
-                        </select>
-                      </div>
-                    </div>
-                    <div className="col-md-6">
-                      <div className="form-group">
-                        <label>Designation <span className="text-danger">*</span></label>
-                        <select className="select">
-                          <option>Select Designation</option>
-                          <option>Web Designer</option>
-                          <option>Web Developer</option>
-                          <option>Android Developer</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="table-responsive m-t-15">
-                    <table className="table table-striped custom-table">
-                      <thead>
-                        <tr>
-                          <th>Module Permission</th>
-                          <th className="text-center">Read</th>
-                          <th className="text-center">Write</th>
-                          <th className="text-center">Create</th>
-                          <th className="text-center">Delete</th>
-                          <th className="text-center">Import</th>
-                          <th className="text-center">Export</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          <td>Holidays</td>
-                          <td className="text-center">
-                            <input defaultChecked type="checkbox" />
-                          </td>
-                          <td className="text-center">
-                            <input type="checkbox" />
-                          </td>
-                          <td className="text-center">
-                            <input type="checkbox" />
-                          </td>
-                          <td className="text-center">
-                            <input type="checkbox" />
-                          </td>
-                          <td className="text-center">
-                            <input type="checkbox" />
-                          </td>
-                          <td className="text-center">
-                            <input type="checkbox" />
-                          </td>
-                        </tr>
-                        <tr>
-                          <td>Leaves</td>
-                          <td className="text-center">
-                            <input defaultChecked type="checkbox" />
-                          </td>
-                          <td className="text-center">
-                            <input defaultChecked type="checkbox" />
-                          </td>
-                          <td className="text-center">
-                            <input defaultChecked type="checkbox" />
-                          </td>
-                          <td className="text-center">
-                            <input type="checkbox" />
-                          </td>
-                          <td className="text-center">
-                            <input type="checkbox" />
-                          </td>
-                          <td className="text-center">
-                            <input type="checkbox" />
-                          </td>
-                        </tr>
-                        <tr>
-                          <td>Clients</td>
-                          <td className="text-center">
-                            <input defaultChecked type="checkbox" />
-                          </td>
-                          <td className="text-center">
-                            <input defaultChecked type="checkbox" />
-                          </td>
-                          <td className="text-center">
-                            <input defaultChecked type="checkbox" />
-                          </td>
-                          <td className="text-center">
-                            <input type="checkbox" />
-                          </td>
-                          <td className="text-center">
-                            <input type="checkbox" />
-                          </td>
-                          <td className="text-center">
-                            <input type="checkbox" />
-                          </td>
-                        </tr>
-                        <tr>
-                          <td>Projects</td>
-                          <td className="text-center">
-                            <input defaultChecked type="checkbox" />
-                          </td>
-                          <td className="text-center">
-                            <input type="checkbox" />
-                          </td>
-                          <td className="text-center">
-                            <input type="checkbox" />
-                          </td>
-                          <td className="text-center">
-                            <input type="checkbox" />
-                          </td>
-                          <td className="text-center">
-                            <input type="checkbox" />
-                          </td>
-                          <td className="text-center">
-                            <input type="checkbox" />
-                          </td>
-                        </tr>
-                        <tr>
-                          <td>Tasks</td>
-                          <td className="text-center">
-                            <input defaultChecked type="checkbox" />
-                          </td>
-                          <td className="text-center">
-                            <input defaultChecked type="checkbox" />
-                          </td>
-                          <td className="text-center">
-                            <input defaultChecked type="checkbox" />
-                          </td>
-                          <td className="text-center">
-                            <input defaultChecked type="checkbox" />
-                          </td>
-                          <td className="text-center">
-                            <input type="checkbox" />
-                          </td>
-                          <td className="text-center">
-                            <input type="checkbox" />
-                          </td>
-                        </tr>
-                        <tr>
-                          <td>Chats</td>
-                          <td className="text-center">
-                            <input defaultChecked type="checkbox" />
-                          </td>
-                          <td className="text-center">
-                            <input defaultChecked type="checkbox" />
-                          </td>
-                          <td className="text-center">
-                            <input defaultChecked type="checkbox" />
-                          </td>
-                          <td className="text-center">
-                            <input defaultChecked type="checkbox" />
-                          </td>
-                          <td className="text-center">
-                            <input type="checkbox" />
-                          </td>
-                          <td className="text-center">
-                            <input type="checkbox" />
-                          </td>
-                        </tr>
-                        <tr>
-                          <td>Assets</td>
-                          <td className="text-center">
-                            <input defaultChecked type="checkbox" />
-                          </td>
-                          <td className="text-center">
-                            <input defaultChecked type="checkbox" />
-                          </td>
-                          <td className="text-center">
-                            <input defaultChecked type="checkbox" />
-                          </td>
-                          <td className="text-center">
-                            <input defaultChecked type="checkbox" />
-                          </td>
-                          <td className="text-center">
-                            <input type="checkbox" />
-                          </td>
-                          <td className="text-center">
-                            <input type="checkbox" />
-                          </td>
-                        </tr>
-                        <tr>
-                          <td>Timing Sheets</td>
-                          <td className="text-center">
-                            <input defaultChecked type="checkbox" />
-                          </td>
-                          <td className="text-center">
-                            <input defaultChecked type="checkbox" />
-                          </td>
-                          <td className="text-center">
-                            <input defaultChecked type="checkbox" />
-                          </td>
-                          <td className="text-center">
-                            <input defaultChecked type="checkbox" />
-                          </td>
-                          <td className="text-center">
-                            <input type="checkbox" />
-                          </td>
-                          <td className="text-center">
-                            <input type="checkbox" />
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                  <div className="submit-section">
-                    <button className="btn btn-primary submit-btn">Save</button>
-                  </div>
-                </form>
+                    </Form>
+                  )}
+                </Formik> : ""}
               </div>
             </div>
           </div>
@@ -885,6 +648,8 @@ const mapStateToProps = state => {
     departmentList: state.allEmployees.departmentList,
     designationList: state.allEmployees.designationList,
     module_permission: state.allEmployees.module_permission,
+    employeeList: state.allEmployees.employeeList,
+    editEmployee: state.allEmployees.editEmployee,
   }
 }
 const mapDispatchToProps = dispatch => {
@@ -893,6 +658,8 @@ const mapDispatchToProps = dispatch => {
     getDepartment: (data) => dispatch(allEmployeesAction.getDepartmentList(data)),
     getDesignation: (data) => dispatch(allEmployeesAction.getDesignationList(data)),
     getModulePermission: (data) => dispatch(allEmployeesAction.getModulePermission(data)),
+    getEmployee: (data) => dispatch(allEmployeesAction.getEmployeeList(data)),
+    getEditEmployee: (data) => dispatch(allEmployeesAction.getEditEmployee(data)),
   }
 };
 export default connect(mapStateToProps, mapDispatchToProps)(Employee);

@@ -4,26 +4,34 @@ const allEmployesState = {
     companyList: [],
     departmentList: [],
     designationList: [],
-    module_permission: []
+    module_permission: [],
+    employeeList: [],
+    editEmployee: {},
 }
 
 export const allEmployeeSlice = createSlice({
     name: "allEmployees",
     initialState: allEmployesState,
     reducers: {
-         getCompanyList(state , action){
-            state.companyList =  action.payload
+        getCompanyList(state, action) {
+            state.companyList = action.payload
         },
         getDepartmentList(state, action) {
             state.departmentList = action.payload
         },
-        getDesignationList(state , action){
+        getDesignationList(state, action) {
             state.designationList = action.payload
         },
-        getModulePermission(state , action){
+        getModulePermission(state, action) {
             state.module_permission = action.payload
         },
-        
+        getEmployeeList(state, action) {
+            state.employeeList = action.payload    
+        },
+        getEditEmployee(state,action) {
+            state.editEmployee = {...action.payload ,edit_module_loading: true}
+            
+        },
     }
 })
 
